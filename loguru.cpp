@@ -118,6 +118,23 @@
 	#endif
 #endif
 
+#if LOGURU_PTHREADS && !(defined(__GLIBC__) || defined(__UCLIBC__))
+	// musl does not have pthread_getname_np
+
+	#include <sys/prctl.h>
+	#include <fcntl.h>
+
+	int pthread_getname_np(pthread_t thread, char *name, size_t len)
+	{
+		if (len > 15) return ERANGE;
+
+		if (thread == pthread_self())
+			return prctl(PR_GET_NAME, name) ? errno : 0;
+
+		return ENOENT;
+	}
+#endif
+
 #if LOGURU_WINTHREADS
 	#ifndef _WIN32_WINNT
 		#define _WIN32_WINNT 0x0502
